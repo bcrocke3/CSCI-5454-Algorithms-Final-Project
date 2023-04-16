@@ -11,6 +11,11 @@ import visualize
 NDFloatArray = npt.NDArray[np.float64]
 NDIntArray = npt.NDArray[np.int64]
 
+
+def gen_n_random_points(n: int, min: float, max: float) -> NDFloatArray:
+    return np.random.uniform(min, max, (n, 2))
+
+
 if __name__ == '__main__':
     # make up some input
     test_input: NDFloatArray = np.array([[0.0, 1.0],
@@ -19,6 +24,8 @@ if __name__ == '__main__':
                                          [0.0, 0.0],
                                          [0.5, 0.5]],
                                         dtype=np.float64)
+
+    # test_input: NDFloatArray = gen_n_random_points(1000, 0, 100)
 
     test_answer: NDIntArray = np.array([[1], [1], [1], [1], [0]], dtype=np.int64)
 
