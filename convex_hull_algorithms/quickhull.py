@@ -152,3 +152,130 @@ def convexhull(input_points: NDFloatArray) -> NDIntArray:
     assert(result.shape[1] == 1)
 
     return result
+
+
+# returns the extreme points in each dimension. These points are in the input set
+def get_min_max_points_nd(input_points: np.ndarray) -> (np.ndarray, np.ndarray):
+
+    num_dimensions = input_points.shape[1]
+    #                      dimension,      points
+    min_points = np.zeros((num_dimensions, num_dimensions))
+    max_points = np.zeros((num_dimensions, num_dimensions))
+
+    # For each dimension, set the default max to neg inf and min to pos inf
+    for i in range(num_dimensions):  # For each min/ max point in each dimension
+        for j in range(num_dimensions):  # Set each value in this point
+            min_points[i, j] = np.inf
+            max_points[i, j] = -np.inf
+
+    # For each point in the input_points, check if it is a new min or max point in each dimension
+    for point in input_points:
+        for i in range(num_dimensions):  # Check if this point is a new min or max point in each dimension
+            if point[i] < min_points[i, i]:
+                min_points[i] = point
+            if point[i] > max_points[i, i]:
+                max_points[i] = point
+
+    return min_points, max_points
+
+
+# Note: winding order is important for the 3D case. The plane points must follow the right hand rule
+def distance_to_plane(point, plane_points):
+    # Get the normal vector of the plane
+    v1 = plane_points[0] - plane_points[1]
+    v2 = plane_points[2] - plane_points[1]
+    normal = np.cross(v1, v2)
+
+    # Get the distance of the point to the plane
+    dist = np.dot(normal, point - plane_points[0]) / np.linalg.norm(normal)
+
+    return dist
+
+
+def find_hull_points_3d(input_points, plane_points):
+    # Base case: no points outside of the plane
+    if len(input_points) == 0:
+        return None
+
+    upper_hull_points = []
+    result_points = []
+
+    # Find the furthest point from the plane
+    max_distance = 0.0
+    furthest_point = []
+    for p in input_points:
+        dist = distance_to_plane(p, plane_points)
+        if dist > max_distance:
+            max_distance = dist
+            furthest_point = p
+
+    if furthest_point != []:
+        result_points.append(furthest_point)
+
+    ccw_points = [plane_points[0], plane_points[1], furthest_point]
+    cw_points = [furthest_point, plane_points[1], plane_points[0]]
+
+    r1 = find_hull_points_3d(upper_hull_points, ccw_points)
+    r2 = find_hull_points_3d(upper_hull_points, cw_points)
+
+    # Concatenate the results
+    if r1 is not None:
+        result_points.extend(r1)
+
+    if r2 is not None:
+        result_points.extend(r2)
+
+    if result_points == []:
+        return None
+    else:
+        return result_points
+
+
+def convexhull3d(input_points: NDFloatArray) -> NDIntArray:
+    assert(len(input_points.shape) == 2)  # check that input points is 2D array
+
+    # some useful attributes of input points
+    num_points: int = input_points.shape[0]
+    dim: int = input_points.shape[1]
+
+    print(f"Num Points: {num_points}")
+    print(f"Dimension: {dim}")
+
+    result_points = []
+    min_points, max_points = get_min_max_points_nd(input_points)
+
+    # Add the min and max points to the result since they must be on the convex hull
+    # Note: duplicates are not removed, we handle this later
+    for point in min_points:
+        result_points.append(point)
+    for point in max_points:
+        result_points.append(point)
+
+    print(f"Min Points: {min_points}")
+    print(f"Max Points: {max_points}")
+
+    ccw_points = [min_points[0], min_points[1], min_points[2]]
+    cw_points = [min_points[2], min_points[1], min_points[0]]
+    upper = find_hull_points_3d(input_points, ccw_points)
+    lower = find_hull_points_3d(input_points, cw_points)
+
+    if upper is not None:
+        result_points.extend(upper)
+
+    if lower is not None:
+        result_points.extend(lower)
+
+    # Default result - no point is on the convex hull
+    result: NDIntArray = np.zeros((num_points, 1), dtype=np.int64)
+
+    # Set the result to 1 for points that are on the convex hull
+    for point in result_points:
+        for i in range(num_points):
+            if (point[0] == input_points[i, 0]) and (point[1] == input_points[i, 1]):
+                result[i] = 1
+
+    # check that result is correct shape
+    assert(result.shape[0] == input_points.shape[0])
+    assert(result.shape[1] == 1)
+
+    return result

@@ -42,20 +42,21 @@ if __name__ == '__main__':
     visualize.draw2D(test_input, quickhull_result, "Quickhull Result")
     visualize.draw2D(test_input, test_answer, "Hard-Coded Answer")
 
-    test_input_3d: NDFloatArray = np.array([[0.0, 1.0, 0.0],
-                                            [1.0, 1.0, 0.0],
-                                            [1.0, 0.0, 0.0],
-                                            [0.0, 0.0, 0.0],
-                                            [0.5, 0.5, 0.0],
-                                            [0.0, 1.0, 1.0],
-                                            [1.0, 1.0, 1.0],
-                                            [1.0, 0.0, 1.0],
-                                            [0.0, 0.0, 1.0],
-                                            [0.5, 0.5, 1.0]],
+    test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
+                                            [0.0, 0.0, 2.0],
+                                            [2.0, 0.0, 0.0],
+                                            [2.0, 0.0, 2.0],
+                                            [2.0, 2.0, 0.0],
+                                            [2.0, 2.0, 2.0],
+                                            [0.0, 2.0, 0.0],
+                                            [0.0, 2.0, 2.0],
+                                            [1.0, 1.0, 1.0]],
                                              dtype=np.float64)
 
     # test_input_3d: NDFloatArray = gen_n_random_points_3d(10, 0, 100)
 
-    test_answer_3d: NDIntArray = np.array([[1], [1], [1], [1], [0], [1], [1], [1], [1], [0]], dtype=np.int64)
+    test_answer_3d: NDIntArray = np.array([[1], [1], [1], [1], [1], [1], [1], [1], [0]], dtype=np.int64)
 
-    visualize.draw3D(test_input_3d, test_answer_3d, "3D Result")
+    quickhull_result_3d: NDIntArray = quickhull.convexhull3d(test_input_3d)
+
+    visualize.draw3D(test_input_3d, quickhull_result_3d, "3D Result")
