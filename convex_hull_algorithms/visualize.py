@@ -2,6 +2,7 @@
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # types for n-dimensional arrays
 NDFloatArray = npt.NDArray[np.float64]
@@ -56,3 +57,50 @@ def draw3D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull R
     ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=colormap[colors[:, 0]])
     plt.title(title)
     plt.show()
+
+
+def interact3d(points: NDFloatArray, colors: NDIntArray, face_indices, face_points, orgi_faces=[], orgi_points=[]) -> None:
+
+    colormap = np.array(['black', 'red'])
+
+    fig = go.Figure()
+
+    # Extract the x, y, z from the points array
+    points_x = []
+    points_y = []
+    points_z = []
+    for point in points:
+        points_x.append(point[0])
+        points_y.append(point[1])
+        points_z.append(point[2])
+
+    if orgi_faces != [] and orgi_points != []:
+        orgi_mesh = go.Mesh3d(x=orgi_points[:, 0],
+                              y=orgi_points[:, 1],
+                              z=orgi_points[:, 2],
+                              i=orgi_faces[:, 0],
+                              j=orgi_faces[:, 1],
+                              k=orgi_faces[:, 2], showscale=True, opacity=1.0)
+        fig.add_trace(orgi_mesh)
+
+    mesh = go.Mesh3d(x=face_points[:, 0],
+                     y=face_points[:, 1],
+                     z=face_points[:, 2],
+                     i=face_indices[:, 0],
+                     j=face_indices[:, 1],
+                     k=face_indices[:, 2],
+                     showscale=True,
+                     opacity=0.5)
+    fig.add_trace(mesh)
+
+    colors = colormap[colors[:, 0]]
+
+    scatter = go.Scatter3d(
+                x=points_x,
+                y=points_y,
+                z=points_z,
+                marker=dict(size=6, color=colors, colorscale='Viridis', opacity=0.8),
+                mode='markers')
+    fig.add_trace(scatter)
+
+    fig.show()

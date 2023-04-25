@@ -1,6 +1,8 @@
 # python imports
 import numpy as np
 import numpy.typing as npt
+import trimesh
+
 
 # local imports
 import divide_and_conquer
@@ -18,6 +20,14 @@ def gen_n_random_points_2d(n: int, min: float, max: float) -> NDFloatArray:
 
 def gen_n_random_points_3d(n: int, min: float, max: float) -> NDFloatArray:
     return np.random.uniform(min, max, (n, 3))
+
+
+def load_slt_to_point_cloud(file_name):
+    mesh = trimesh.load(file_name)
+    points = mesh.vertices
+    faces = mesh.faces
+
+    return points, faces
 
 
 if __name__ == '__main__':
@@ -42,21 +52,43 @@ if __name__ == '__main__':
     visualize.draw2D(test_input, quickhull_result, "Quickhull Result")
     visualize.draw2D(test_input, test_answer, "Hard-Coded Answer")
 
-    test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
-                                            [0.0, 0.0, 2.0],
-                                            [2.0, 0.0, 0.0],
-                                            [2.0, 0.0, 2.0],
-                                            [2.0, 2.0, 0.0],
-                                            [2.0, 2.0, 2.0],
-                                            [0.0, 2.0, 0.0],
-                                            [0.0, 2.0, 2.0],
-                                            [1.0, 1.0, 1.0]],
-                                             dtype=np.float64)
+    # Cube points
+    # test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
+    #                                         [0.0, 0.0, 2.0],
+    #                                         [2.0, 0.0, 0.0],
+    #                                         [2.0, 0.0, 2.0],
+    #                                         [2.0, 2.0, 0.0],
+    #                                         [2.0, 2.0, 2.0],
+    #                                         [0.0, 2.0, 0.0],
+    #                                         [0.0, 2.0, 2.0],
+    #                                         [1.0, 1.0, 1.0]],
+    #                                          dtype=np.float64)
 
-    # test_input_3d: NDFloatArray = gen_n_random_points_3d(10, 0, 100)
+    # Random points
+    # test_input_3d: NDFloatArray = gen_n_random_points_3d(1000, 0, 100)
 
-    test_answer_3d: NDIntArray = np.array([[1], [1], [1], [1], [1], [1], [1], [1], [0]], dtype=np.int64)
+    # Add a bounding box around the random points to test hull
+    # test_input_3d_box: NDFloatArray = np.array([[0.0, 0.0, 0.0],
+    #                                         [0.0, 0.0, 102],
+    #                                         [102, 0.0, 0.0],
+    #                                         [102, 0.0, 102],
+    #                                         [102, 102, 0.0],
+    #                                         [102, 102, 102],
+    #                                         [0.0, 102, 0.0],
+    #                                         [0.0, 102, 102]],
+    #                                          dtype=np.float64)
+    # test_input_3d = np.concatenate((test_input_3d, test_input_3d_box), axis=0)
 
-    quickhull_result_3d: NDIntArray = quickhull.convexhull3d(test_input_3d)
+    # Load points STL file
+    stl_points, stl_faces = load_slt_to_point_cloud("chair.stl")
+    test_input_3d = stl_points
+
+    quickhull_result_3d, face_indices, face_points = quickhull.convexhull3d(test_input_3d)
 
     visualize.draw3D(test_input_3d, quickhull_result_3d, "3D Result")
+
+    # Use with non-stl data
+    # visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points)
+
+    # Use with stl data to get original mesh too
+    visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points, stl_faces, stl_points)
