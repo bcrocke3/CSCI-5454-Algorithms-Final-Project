@@ -9,7 +9,7 @@ NDFloatArray = npt.NDArray[np.float64]
 NDIntArray = npt.NDArray[np.int64]
 
 
-def draw2D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull Results") -> None:
+def draw2D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull Results", label_points=False) -> None:
     """ Plots 2D points in multiple colors
 
     :param points: 2D array of points to plot. Each row is a point. Must have 2 columns for x, y dimensions
@@ -25,11 +25,16 @@ def draw2D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull R
     assert(points.shape[0] == colors.shape[0])  # points and colors have same # of rows
 
     # define colors
-    colormap = np.array(['black', 'red'])
+    colormap = np.array(['black', 'red', 'blue', 'green', 'orange'])
 
     # graph
     plt.scatter(points[:, 0], points[:, 1], c=colormap[colors[:, 0]])
     plt.title(title)
+
+    if label_points:
+        for i in range(points.shape[0]):
+            plt.annotate(str(i), (points[i, 0], points[i, 1]))
+
     plt.show()
 
 

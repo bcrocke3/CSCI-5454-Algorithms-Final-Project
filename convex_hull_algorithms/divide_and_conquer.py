@@ -3,31 +3,9 @@ import numpy as np
 import numpy.typing as npt
 from typing import List, Tuple
 
-import visualize
-
 # types for n-dimensional arrays
 NDFloatArray = npt.NDArray[np.float64]
 NDIntArray = npt.NDArray[np.int64]
-
-
-def evaluate_point_line(point, line_start, line_end):
-    """ returns positive number if point is above the line, negative number if point below line, zero if point is
-        on the line; "above" and "below" determined by ordering of line_start and line_end
-
-    :param point: a point to compare to the line
-    :param line_start: the starting point defining the line
-    :param line_end:  the ending point defining the line
-    :return: float, how the point evaluates in the line equation
-    """
-
-    if line_end[0] - line_start[0] != 0:
-        slope: float = (line_end[1] - line_start[1]) / (line_end[0] - line_start[0])
-
-        return (slope * (point[0] - line_start[0])) - (point[1] - line_start[1])
-
-    else:
-        # line is vertical, so only x-coordinate determines point's side of line
-        return point[0] - line_start[0]
 
 
 def convexhull_2d(input_points: NDFloatArray) -> NDIntArray:
@@ -44,9 +22,8 @@ def convexhull_2d(input_points: NDFloatArray) -> NDIntArray:
     num_points: int = input_points.shape[0]
     dim: int = input_points.shape[1]
 
-    print("Computing 2D Hull with Divide and Conquer...")
-    print(f"Num Points: {num_points}")
-    print(f"Dimension: {dim}")
+    assert(num_points >= 3)
+    assert(dim == 2)
 
     # compute the Convex Hull
     result_points = convexhull_2d_return_points(input_points)
@@ -67,45 +44,95 @@ def convexhull_2d(input_points: NDFloatArray) -> NDIntArray:
     return result
 
 
+def convexhull_2d_return_points(input_points: NDFloatArray) -> NDFloatArray:
+    """ Convex Hull function that does the dividing and conquering. Returns list of points, not binary array.
+
+    :param input_points: 2D array representing input points
+    :return: 2D array, a subset of input_points that make up the hull
+    """
+    num_points: int = input_points.shape[0]
+    result_points = None
+
+    # base case
+    if num_points <= 5:
+        result_points = brute_hull(input_points)
+
+    # recursive case
+    else:
+        # divide
+        sorted_points = input_points[np.argsort(input_points[:, 0])]  # sort by x-coord to split
+        middle_index = num_points // 2
+        left_half = sorted_points[0:middle_index, :]
+        right_half = sorted_points[middle_index:, :]
+
+        # conquer
+        left_hull_points = convexhull_2d_return_points(left_half)
+        right_hull_points = convexhull_2d_return_points(right_half)
+
+        # merge
+        # first find the upper and lower tangents to the two hull
+        # use tangents to decide which points to keep from left and right hulls
+        up_tan_left, up_tan_right, lo_tan_left, lo_tan_right = find_tangent_points(left_hull_points, right_hull_points)
+
+        combined_hull = []
+        if lo_tan_left < up_tan_left:
+            lo_tan_left += left_hull_points.shape[0]
+        for i in range(up_tan_left, lo_tan_left + 1):
+            combined_hull.append(left_hull_points[np.mod(i, left_hull_points.shape[0])])
+
+        if up_tan_right < lo_tan_right:
+            up_tan_right += right_hull_points.shape[0]
+        for i in range(lo_tan_right, up_tan_right + 1):
+            combined_hull.append(right_hull_points[np.mod(i, right_hull_points.shape[0])])
+
+        result_points = np.array(combined_hull)  # maintains CCW winding of points
+
+    return result_points
+
+
 def brute_hull(input_points: NDFloatArray) -> NDFloatArray:
     """ Brute force computation for finding the convex hull
 
     :param input_points: small set of input points to compute the convex hull of
-    :return: 2 array representing the points that are on the hull, in counter-clockwise ordering
+    :return: 2D array representing the points that are on the hull, in counter-clockwise ordering
     """
     num_points = input_points.shape[0]
+    assert(3 <= num_points <= 10)
 
-    hull_edges = []
+    # draw all the points with labels of input order
+    # visualize.draw2D(input_points, np.ones(shape=(len(input_points), 1), dtype=np.int64), label_points=True)
 
+    hull_edges = []  # to fill with pairs of indices of points
+
+    # Check every pair of points to see if it is a hull edge
     for i in range(num_points):
         for j in range(i+1, num_points):
+
+            # draw a line between two points (point_i and point_j)
+            # check if all the other points are on one side of the line
+            # if yes, this is an edge on the hull
 
             point_i = input_points[i]
             point_j = input_points[j]
 
-            def evaluate_point(test_point):
-                if (point_j[0] - point_i[0]) != 0:
-                    m = (point_j[1] - point_i[1]) / (point_j[0] - point_i[0])
-
-                    return (m * (test_point[0] - point_i[0])) - (test_point[1] - point_i[1])
-                else:
-                    return test_point[0] - point_i[0]
-
             above_line, below_line = 0, 0
             for p in input_points:
-                eval_pt = evaluate_point(p)
-                if eval_pt >= 0.0:
-                    above_line += 1
+                eval_pt = evaluate_point_line(p, point_i, point_j)
                 if eval_pt <= 0.0:
+                    above_line += 1
+                if eval_pt >= 0.0:
                     below_line += 1
 
+            assert(above_line + below_line == num_points + 2) # the two points that make line should be double counted
+
             if above_line == num_points or below_line == num_points:
-                # orient point
-                any_pt = None
-                if j + 1 < num_points:
-                    any_pt = input_points[j + 1]
-                else:
-                    any_pt = input_points[i - 1]  # any pt not i or j
+                # if all the points were on one side of the line, find which order the points should go in (CCW)
+
+                # pick any point, not i or j to orient hull points
+                rand_index = np.random.randint(0, num_points)
+                while rand_index == i or rand_index == j:
+                    rand_index = np.random.randint(0, num_points)
+                any_pt = input_points[rand_index]
 
                 vec1 = point_j - point_i  # vec from i to j
                 vec2 = any_pt - point_j  # vec from any to j
@@ -118,92 +145,119 @@ def brute_hull(input_points: NDFloatArray) -> NDFloatArray:
                 # add the edge to the list
                 hull_edges.append((first, second))
 
+    assert(len(hull_edges) >= 3)  # a hull must be at least a triangle
+
+    # hull_edges contains list of edges in no particular order
+    # sort them so that each edge shares a point with the next
     sort_ordering(hull_edges)
 
+    # turn list of indices into list of points
     result_points = []
     for edge in hull_edges:
         result_points.append(input_points[edge[0]])
 
     result_array = np.array(result_points)
-    print("HULL POINTS - IN CCW ORDER")
-    print(result_array)
+
+    # draw just the hull points; should be labelled in CCW order
+    # visualize.draw2D(result_array, np.ones(shape=(len(result_array), 1), dtype=np.int64), label_points=True)
 
     return result_array
 
 
-def convexhull_2d_return_points(input_points: NDFloatArray) -> NDFloatArray:
-    num_points: int = input_points.shape[0]
-    result_points = None
+def find_tangent_points(left_polygon:NDFloatArray, right_polygon: NDFloatArray) -> Tuple[int, int, int, int]:
+    """ Given two polygons (as two list of CCW wound points), returns the indices of the upper and lower tangent points
 
-    if num_points <= 5:
-        result_points = brute_hull(input_points)
+    :param left_polygon: 2D array of points, with counter-clockwise winding
+    :param right_polygon: 2D array of points, with counter-clockwise winding
+    :return: indices of left upper, right upper, left lower, and right lower tangent points
+    """
+    num_left_pts: int = left_polygon.shape[0]
+    num_right_pts: int = right_polygon.shape[0]
+    total_pts: int = num_left_pts + num_right_pts
+    print("Left Points: ", num_left_pts)
 
-    else:
-        # divide
-        print("DIVIDE")
-        print("Input Points")
-        print(input_points)
-        sorted_points = input_points[np.argsort(input_points[:, 0])]
-        print("Sorted Points")
-        print(sorted_points)
+    # find upper tangent points
+    left_upper_index = np.argmax(left_polygon[:, 0])
+    right_upper_index = np.argmin(right_polygon[:, 0])
 
-        middle_index = num_points // 2
-        left_half = sorted_points[0:middle_index, :]
-        right_half = sorted_points[middle_index:, :]
+    left_upper_pt = left_polygon[left_upper_index]  # the rightmost point of left polygon
+    right_upper_pt = right_polygon[right_upper_index]  # leftmost point of right polygon
+    found_upper_tangent = False
+    while not found_upper_tangent:
 
-        # conquer
-        left_hull_points = convexhull_2d_return_points(left_half)
-        right_hull_points = convexhull_2d_return_points(right_half)
+        # do the check - evaluate every point against line made with left/right tangent points
+        l_below_cnt = 0
+        r_below_cnt = 0
+        for lp in left_polygon:
+            e = evaluate_point_line(lp, left_upper_pt, right_upper_pt)
+            if e >= 0.0:
+                l_below_cnt += 1
 
-        draw_partial(left_half, left_hull_points)
-        draw_partial(right_half, right_hull_points)
+        for rp in right_polygon:
+            e = evaluate_point_line(rp, left_upper_pt, right_upper_pt)
+            if e >= 0.0:
+                r_below_cnt += 1
 
-        # merge
-        left_max = left_hull_points[np.argmax(left_hull_points[:, 1])]  # point with max y coord, from left hull
-        left_min = left_hull_points[np.argmin(left_hull_points[:, 1])]  # point with min y coord, from left hull
-        right_max = right_hull_points[np.argmax(right_hull_points[:, 1])]  # point with max y coord, from right hull
-        right_min = right_hull_points[np.argmin(right_hull_points[:, 1])]  # point with min y coord, from right hull
+        if l_below_cnt + r_below_cnt == total_pts:
+            found_upper_tangent = True
+        else:
+            if l_below_cnt < num_left_pts:
+                # some points in left polygon above upper tangent
+                # move left point counter-clockwise
+                left_upper_index = np.mod(left_upper_index + 1, num_left_pts)
+            elif r_below_cnt < num_right_pts:
+                # some points in right polygon are above upper tangent
+                # move right point clockwise
+                right_upper_index = np.mod(right_upper_index - 1, num_right_pts)
 
-        combined_hull = []
-        left_slope = (left_max[1] - left_min[1]) / (left_max[0] - left_min[0])
-        for left_hull_pt in left_hull_points:
-            pt_eval = evaluate_point_line(left_hull_pt, left_min, left_max)
+            left_upper_pt = left_polygon[left_upper_index]
+            right_upper_pt = right_polygon[right_upper_index]
 
-            if left_slope > 0 and pt_eval > 0 or left_slope < 0 and pt_eval < 0:
-                # point is no longer on the hull bc it's to the right of the min/max line
-                pass
-            else:
-                combined_hull.append(left_hull_pt)
+    # find lower tangent points
+    left_lower_index = np.argmax(left_polygon[:, 0])
+    right_lower_index = np.argmin(right_polygon[:, 0])
 
-        right_slope = (right_max[1] - right_min[1]) / (right_max[0] - right_min[0])
-        for right_hull_pt in right_hull_points:
-            pt_eval = evaluate_point_line(right_hull_pt, right_min, right_max)
+    left_lower_pt = left_polygon[left_lower_index]  # the rightmost point of left polygon
+    right_lower_pt = right_polygon[right_lower_index]  # leftmost point of right polygon
+    found_lower_tangent = False
+    while not found_lower_tangent:
+        # for debug
+        left_colors = np.zeros(shape=(left_polygon.shape[0], 1), dtype=np.int64)
+        right_colors = np.ones(shape=(right_polygon.shape[0], 1), dtype=np.int64) + 1
 
-            if right_slope > 0 and pt_eval < 0 or right_slope < 0 and pt_eval > 0:
-                # point is no longer on the hull bc it's to the left of the min/max line
-                pass
-            else:
-                combined_hull.append(right_hull_pt)
+        left_colors[left_lower_index, 0] += 1
+        right_colors[right_lower_index, 0] += 1
+        all_colors = np.concatenate((left_colors, right_colors), axis=0)
 
-        # return
-        result_points = np.array(combined_hull)
+        # do the check - evaluate every point against line made with left/right tangent points
+        l_above_cnt = 0
+        r_above_cnt = 0
+        for lp in left_polygon:
+            e = evaluate_point_line(lp, left_lower_pt, right_lower_pt)
+            if e <= 0.0:
+                l_above_cnt += 1
 
-    draw_partial(input_points, result_points)
-    return result_points
+        for rp in right_polygon:
+            e = evaluate_point_line(rp, left_lower_pt, right_lower_pt)
+            if e <= 0.0:
+                r_above_cnt += 1
 
+        if l_above_cnt + r_above_cnt == total_pts:
+            found_lower_tangent = True
+        else:
+            if l_above_cnt < num_left_pts:
+                # some points in left polygon below lower tangent
+                # move left point clockwise
+                left_lower_index = np.mod(left_lower_index - 1, num_left_pts)
+            elif r_above_cnt < num_right_pts:
+                # some points in right polygon are below lower tangent
+                # move right point counter-clockwise
+                right_lower_index = np.mod(right_lower_index + 1, num_right_pts)
 
-def draw_partial(input_points, point_on_hull):
-    num_points: int = input_points.shape[0]
+            left_lower_pt = left_polygon[left_lower_index]
+            right_lower_pt = right_polygon[right_lower_index]
 
-    result: NDIntArray = np.zeros((num_points, 1), dtype=np.int64)  # assume nothing is in the hull
-
-    for input_index, input_pt in enumerate(input_points):  # mark all the points that are in the hull
-        for hull_pt in point_on_hull:
-
-            if np.array_equal(input_pt, hull_pt):
-                result[input_index, 0] = 1
-
-    visualize.draw2D(input_points, result, "Divide and Conquer Intermediate Result")
+    return left_upper_index, right_upper_index, left_lower_index, right_lower_index
 
 
 def sort_ordering(unsorted_ordering: List[Tuple[int, int]]):
@@ -235,9 +289,25 @@ def sort_ordering(unsorted_ordering: List[Tuple[int, int]]):
     assert(unsorted_ordering[0][0] == unsorted_ordering[-1][-1])
 
 
-if __name__ == '__main__':
-    test = [(0, 4), (6, 1), (5, 0), (2, 5), (4, 6), (3, 2), (1, 3)]
+def evaluate_point_line(point, line_start, line_end):
+    """ returns positive number if point is below the line, negative number if point above line, zero if point is
+        on the line; "above" and "below" determined by ordering of line_start and line_end
 
-    print(test)
-    sort_ordering(test)
-    print(test)
+    :param point: a point to compare to the line
+    :param line_start: the starting point defining the line
+    :param line_end:  the ending point defining the line
+    :return: float, how the point evaluates in the line equation
+    """
+
+    # if the point is exactly on the line then just return zero (and skip any floating point error nonsense)
+    if np.array_equal(point, line_start) or np.array_equal(point, line_end):
+        return 0.0
+
+    if line_end[0] - line_start[0] != 0:
+        slope: float = (line_end[1] - line_start[1]) / (line_end[0] - line_start[0])
+
+        return (slope * (point[0] - line_start[0])) - (point[1] - line_start[1])
+
+    else:
+        # line is vertical, so only x-coordinate determines point's side of line
+        return point[0] - line_start[0]

@@ -53,12 +53,13 @@ if __name__ == '__main__':
     dc_result: NDIntArray = divide_and_conquer.convexhull_2d(test_input)
     dc_result_2: NDIntArray = divide_and_conquer.convexhull_2d(test_input_2)
     dc_result_3: NDIntArray = divide_and_conquer.convexhull_2d(test_input_3)
-    # quickhull_result: NDIntArray = quickhull.convexhull(test_input)
+    quickhull_result: NDIntArray = quickhull.convexhull(test_input)
 
     # draw results
     visualize.draw2D(test_input, dc_result, "Divide and Conquer Result 1")
     visualize.draw2D(test_input_2, dc_result_2, "Divide and Conquer Result 2")
-    visualize.draw2D(test_input_3, dc_result_3, "Divide and Conquer Result - Random Input")
+    visualize.draw2D(test_input_3, dc_result_3, "Divide and Conquer Result - Random Input 1")
+
 
     # Cube points
     # test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
@@ -88,15 +89,15 @@ if __name__ == '__main__':
     # test_input_3d = np.concatenate((test_input_3d, test_input_3d_box), axis=0)
 
     # Load points STL file
-    stl_points, stl_faces = load_slt_to_point_cloud("chair.stl")
-    test_input_3d = stl_points
+    # stl_points, stl_faces = load_slt_to_point_cloud("chair.stl")
+    # test_input_3d = stl_points
 
-    quickhull_result_3d, face_indices, face_points = quickhull.convexhull3d(test_input_3d)
+    # quickhull_result_3d, face_indices, face_points = quickhull.convexhull3d(test_input_3d)
 
-    visualize.draw3D(test_input_3d, quickhull_result_3d, "3D Result")
+    # visualize.draw3D(test_input_3d, quickhull_result_3d, "3D Result")
 
     # Use with non-stl data
     # visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points)
 
     # Use with stl data to get original mesh too
-    visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points, stl_faces, stl_points)
+    # visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points, stl_faces, stl_points)
