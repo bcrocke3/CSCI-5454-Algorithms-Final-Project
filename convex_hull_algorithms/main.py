@@ -22,6 +22,17 @@ def gen_n_random_points_3d(n: int, min: float, max: float) -> NDFloatArray:
     return np.random.uniform(min, max, (n, 3))
 
 
+# This function draws the 2D point along a circle with radius r and step size theta centered at (x, y)
+def gen_n_points_on_circle_2d(r: float, theta: float, x: float, y: float) -> NDFloatArray:
+    n = int(2 * np.pi / theta) + 1
+    points = np.zeros((n, 2))
+    for i in range(n):
+        points[i, 0] = x + r * np.cos(i * theta)
+        points[i, 1] = y + r * np.sin(i * theta)
+
+    return points
+
+
 def load_slt_to_point_cloud(file_name):
     mesh = trimesh.load(file_name)
     points = mesh.vertices
@@ -32,34 +43,37 @@ def load_slt_to_point_cloud(file_name):
 
 if __name__ == '__main__':
     # make up some input
-    test_input: NDFloatArray = np.array([[0.0, 1.0],
-                                         [1.0, 1.0],
-                                         [1.0, 0.0],
-                                         [0.0, 0.0],
-                                         [0.5, 0.5]],
-                                        dtype=np.float64)
-    test_input_2: NDFloatArray = np.array([[0.5, 1.0],
-                                           [1.5, 1.0],
-                                           [1.0, 0.0],
-                                           [0.0, 0.0],
-                                           [0.5, 0.5]],
-                                          dtype=np.float64)
+    # test_input: NDFloatArray = np.array([[0.0, 1.0],
+    #                                      [1.0, 1.0],
+    #                                      [1.0, 0.0],
+    #                                      [0.0, 0.0],
+    #                                      [0.5, 0.5]],
+    #                                     dtype=np.float64)
+    # test_input_2: NDFloatArray = np.array([[0.5, 1.0],
+    #                                        [1.5, 1.0],
+    #                                        [1.0, 0.0],
+    #                                        [0.0, 0.0],
+    #                                        [0.5, 0.5]],
+    #                                       dtype=np.float64)
+    #
+    test_input_quick_hull: NDFloatArray = gen_n_random_points_2d(50, 0, 22)
+    circle_points = gen_n_points_on_circle_2d(15, 0.1, 10, 10)
+    test_input_quick_hull = np.concatenate((test_input_quick_hull, circle_points), axis=0)
+    #
+    # test_answer: NDIntArray = np.array([[1], [1], [1], [1], [0]], dtype=np.int64)
+    #
+    # # call the different algorithms
+    # dc_result: NDIntArray = divide_and_conquer.convexhull_2d(test_input)
+    # dc_result_2: NDIntArray = divide_and_conquer.convexhull_2d(test_input_2)
+    # dc_result_3: NDIntArray = divide_and_conquer.convexhull_2d(test_input_3)
+    quickhull_result: NDIntArray = quickhull.convexhull(test_input_quick_hull)
+    #
+    # # draw results
+    # visualize.draw2D(test_input, dc_result, "Divide and Conquer Result 1")
+    # visualize.draw2D(test_input_2, dc_result_2, "Divide and Conquer Result 2")
+    # visualize.draw2D(test_input_3, dc_result_3, "Divide and Conquer Result - Random Input 1")
 
-    test_input_3: NDFloatArray = gen_n_random_points_2d(10, 0, 10)
-
-    test_answer: NDIntArray = np.array([[1], [1], [1], [1], [0]], dtype=np.int64)
-
-    # call the different algorithms
-    dc_result: NDIntArray = divide_and_conquer.convexhull_2d(test_input)
-    dc_result_2: NDIntArray = divide_and_conquer.convexhull_2d(test_input_2)
-    dc_result_3: NDIntArray = divide_and_conquer.convexhull_2d(test_input_3)
-    quickhull_result: NDIntArray = quickhull.convexhull(test_input)
-
-    # draw results
-    visualize.draw2D(test_input, dc_result, "Divide and Conquer Result 1")
-    visualize.draw2D(test_input_2, dc_result_2, "Divide and Conquer Result 2")
-    visualize.draw2D(test_input_3, dc_result_3, "Divide and Conquer Result - Random Input 1")
-
+    visualize.draw2D(test_input_quick_hull, quickhull_result, "Quickhull Result")
 
     # Cube points
     # test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
@@ -89,7 +103,7 @@ if __name__ == '__main__':
     # test_input_3d = np.concatenate((test_input_3d, test_input_3d_box), axis=0)
 
     # Load points STL file
-    # stl_points, stl_faces = load_slt_to_point_cloud("chair.stl")
+    # stl_points, stl_faces = load_slt_to_point_cloud("coil.stl")
     # test_input_3d = stl_points
 
     # quickhull_result_3d, face_indices, face_points = quickhull.convexhull3d(test_input_3d)
