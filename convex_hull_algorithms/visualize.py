@@ -38,7 +38,7 @@ def draw2D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull R
     plt.show()
 
 
-def draw3D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull Results") -> None:
+def draw3D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull Results", label_points=False) -> None:
     """ Plots 3D points in multiple colors
 
     :param points: 2D array of points to plot. Each row is a point. Must have 3 columns for x, y, z dimensions
@@ -61,6 +61,11 @@ def draw3D(points: NDFloatArray, colors: NDIntArray, title: str = "Convex Hull R
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(points[:, 0], points[:, 1], points[:, 2], c=colormap[colors[:, 0]])
     plt.title(title)
+
+    if label_points:
+        for i in range(points.shape[0]):
+            ax.text(points[i, 0], points[i, 1], points[i, 2], str(i))
+
     plt.show()
 
 

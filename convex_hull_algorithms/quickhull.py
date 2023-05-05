@@ -121,8 +121,8 @@ def convexhull(input_points: NDFloatArray) -> NDIntArray:
     num_points: int = input_points.shape[0]
     dim: int = input_points.shape[1]
 
-    print(f"Num Points: {num_points}")
-    print(f"Dimension: {dim}")
+    # print(f"Num Points: {num_points}")
+    # print(f"Dimension: {dim}")
 
     result_points = []
 

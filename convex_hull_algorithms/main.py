@@ -6,8 +6,10 @@ import trimesh
 
 # local imports
 import divide_and_conquer
+import divide_and_conquer_3d as dc3
 import quickhull
 import visualize
+import minimalist_divide_conquer_3d as mdc3d
 
 # types for n-dimensional arrays
 NDFloatArray = npt.NDArray[np.float64]
@@ -76,7 +78,7 @@ if __name__ == '__main__':
     visualize.draw2D(test_input_quick_hull, quickhull_result, "Quickhull Result")
 
     # Cube points
-    # test_input_3d: NDFloatArray = np.array([[0.0, 0.0, 0.0],
+    # test_input_3d: NDFloatArray = np.array([[1.0, 1.0, 1.0],
     #                                         [0.0, 0.0, 2.0],
     #                                         [2.0, 0.0, 0.0],
     #                                         [2.0, 0.0, 2.0],
@@ -84,34 +86,54 @@ if __name__ == '__main__':
     #                                         [2.0, 2.0, 2.0],
     #                                         [0.0, 2.0, 0.0],
     #                                         [0.0, 2.0, 2.0],
-    #                                         [1.0, 1.0, 1.0]],
-    #                                          dtype=np.float64)
+    #                                         [0.0, 0.0, 0.0]],
+    #                                        dtype=np.float64)
 
     # Random points
-    # test_input_3d: NDFloatArray = gen_n_random_points_3d(1000, 0, 100)
+    max_num = 10
+    # test_input_3d: NDFloatArray = gen_n_random_points_3d(4, 1, max_num-1)
 
     # Add a bounding box around the random points to test hull
-    # test_input_3d_box: NDFloatArray = np.array([[0.0, 0.0, 0.0],
-    #                                         [0.0, 0.0, 102],
-    #                                         [102, 0.0, 0.0],
-    #                                         [102, 0.0, 102],
-    #                                         [102, 102, 0.0],
-    #                                         [102, 102, 102],
-    #                                         [0.0, 102, 0.0],
-    #                                         [0.0, 102, 102]],
-    #                                          dtype=np.float64)
+    test_input_3d_box: NDFloatArray = np.array([[-0.1,   -0.1,     0.1],
+                                                [-0.2,     0.1,     max_num-0.2],
+                                                [max_num-0.1, 0.0,     0.2],
+                                                [max_num, 0.2,     max_num-0.1],
+                                                [0.0,     max_num-0.2, -0.1],
+                                                [0.2,     max_num-0.1, max_num],
+                                                [max_num-0.1, max_num, 0.0],
+                                                [max_num, max_num-0.2, max_num-0.1]],
+                                               dtype=np.float64)
     # test_input_3d = np.concatenate((test_input_3d, test_input_3d_box), axis=0)
+
+    test_input_3d = test_input_3d_box
+    visualize.draw3D(test_input_3d, np.zeros((test_input_3d.shape[0], 1), dtype=np.int64), "Input Points", label_points=True)
+    facet_indices = mdc3d.hull(test_input_3d)
+
+    colors = np.zeros((test_input_3d.shape[0], 1), dtype=np.int64)
+    for f in facet_indices:
+        for v in f:
+            # print(f)
+            colors[int(v), 0] = 1
+
+    visualize.draw3D(test_input_3d, colors, "3D Result - Magic")
+    print(np.hstack((test_input_3d, colors)))
+
+    # visualize.interact3d(test_input_3d, colors, facet_indices, test_input_3d)
 
     # Load points STL file
     # stl_points, stl_faces = load_slt_to_point_cloud("coil.stl")
     # test_input_3d = stl_points
 
     # quickhull_result_3d, face_indices, face_points = quickhull.convexhull3d(test_input_3d)
+    dc_result_3d = dc3.convexhull_3d(test_input_3d)
 
+    # static drawing
     # visualize.draw3D(test_input_3d, quickhull_result_3d, "3D Result")
+    visualize.draw3D(test_input_3d, dc_result_3d, "3D Result - Divide and Conquer")
 
     # Use with non-stl data
     # visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points)
 
     # Use with stl data to get original mesh too
     # visualize.interact3d(test_input_3d, quickhull_result_3d, face_indices, face_points, stl_faces, stl_points)
+
